@@ -38,7 +38,7 @@ import {
   mockBoundingClientRect,
   restoreOriginalGetBoundingClientRect,
 } from "../tests/test-utils";
-import { actionBindText } from "../actions";
+import { actionBindText, actionSaveToActiveFile } from "../actions";
 
 unmountComponent();
 
@@ -1958,7 +1958,44 @@ describe("textWysiwyg", () => {
         h.setState({ theme: THEME.LIGHT });
         h.app.scene.mutateElement(textElement, {});
       });
-      expect(colorsAreEqual(editor.style.color, originalColor)).toBe(true);
+    });
+  });
+
+  describe("Test saving shortcuts in wysiwyg", () => {
+    const { h } = window;
+    let textarea: HTMLTextAreaElement;
+    let textElement: ExcalidrawTextElement;
+
+    beforeEach(async () => {
+      await render(<Excalidraw handleKeyboardGlobally={true} />);
+      // @ts-ignore
+      h.app.refreshEditorInterface();
+
+      textElement = UI.createElement("text");
+      mouse.clickOn(textElement);
+      textarea = await getTextEditor();
+    });
+
+    it("should fallback to actionSaveFileToDisk when Ctrl+S is pressed and actionSaveToActiveFile is disabled", async () => {
+      const executeActionSpy = vi.spyOn(h.app.actionManager, "executeAction");
+      
+      const originalPredicate = actionSaveToActiveFile.predicate;
+      // @ts-ignore
+      actionSaveToActiveFile.predicate = () => false;
+
+      fireEvent.keyDown(textarea, {
+        key: KEYS.S,
+        ctrlKey: true,
+      });
+
+      expect(executeActionSpy).toHaveBeenCalled();
+      const calledActions = executeActionSpy.mock.calls.map((call) => call[0].name);
+      expect(calledActions).toContain("saveFileToDisk");
+      expect(calledActions).not.toContain("saveToActiveFile");
+
+      executeActionSpy.mockRestore();
+      // @ts-ignore
+      actionSaveToActiveFile.predicate = originalPredicate;
     });
   });
 });

@@ -53,7 +53,7 @@ import type {
   ExcalidrawTextElement,
 } from "@excalidraw/element/types";
 
-import { actionSaveToActiveFile } from "../actions";
+import { actionSaveToActiveFile, actionSaveFileToDisk } from "../actions";
 
 import {
   parseClipboard,
@@ -650,7 +650,11 @@ export const textWysiwyg = ({
     } else if (actionSaveToActiveFile.keyTest(event)) {
       event.preventDefault();
       handleSubmit();
-      app.actionManager.executeAction(actionSaveToActiveFile);
+      if (app.actionManager.isActionEnabled(actionSaveToActiveFile)) {
+        app.actionManager.executeAction(actionSaveToActiveFile);
+      } else {
+        app.actionManager.executeAction(actionSaveFileToDisk);
+      }
     } else if (event.key === KEYS.ENTER && event[KEYS.CTRL_OR_CMD]) {
       event.preventDefault();
       if (event.isComposing || event.keyCode === 229) {
